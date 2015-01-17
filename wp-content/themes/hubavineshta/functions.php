@@ -1,0 +1,143 @@
+<?php
+function get_post_images( $ID )
+{
+	$args = array(
+		'post_type'   => 'attachment',
+		'numberposts' => -1,
+		'post_parent' => $ID,
+		'orderby'     => 'post_date',
+		'order'		  => 'ASC'
+		);
+	$imgArr = array();
+	$attachments = get_posts( $args );
+
+	if ( $attachments )
+	{
+		foreach ( $attachments as $attachment )
+		{
+
+		 $src = wp_get_attachment_image_src( $attachment->ID, false ); 
+		 $imgArr[] = $src[0];
+		}
+	}	
+
+	return $imgArr;
+}
+
+function vd( $w = NULL, $title = FALSE )
+{
+	echo "<pre style=\"border:1px solid red;\">";
+	if( $title ) echo "<b style=\"background: orange;\">  {$title}  </b><br>";
+	else echo "<b style=\"background: orange;\">  DEBUG INFO: </b><br>";
+	echo var_export( $w, true );
+	echo "</pre>";
+}
+
+	register_sidebar( array(
+		'name' => __( 'Main Sidebar', 'demakom' ),
+		'id' => 'sidebar-1',
+		'before_widget' => '<div id="%1$s" class="widget %2$s">',
+		'after_widget' => "</div>",
+		'before_title' => '<h3 class="widget-title">',
+		'after_title' => '</h3>',
+	) );
+	
+load_theme_textdomain( 'demakom', get_template_directory() . '/languages' );
+
+$locale = get_locale();
+$locale_file = get_template_directory() . "/languages/$locale.php";
+if ( is_readable( $locale_file ) )
+	require_once( $locale_file );
+	
+function generate_debug_bar()
+{
+	if( is_user_logged_in() )
+	{
+		wp_footer();
+		show_admin_bar(true);
+	}
+}
+
+function load_current_styles()
+{    
+    /*
+     * We automatically include custom css files acording to the custom view.
+    */
+        global $current_args;
+    
+
+	if( file_exists( CSS_DIR . "{$current_args['type']}-{$current_args['template']}.css" ) )
+	{
+		$cssFile = get_bloginfo('template_directory') . "/css/" . "{$current_args['type']}-{$current_args['template']}.css" ;
+		echo "\t\t<link rel=\"stylesheet\" href=\"{$cssFile}\" type=\"text/css\" media=\"screen\" />\n";
+	}
+	elseif( file_exists( CSS_DIR . "{$current_args['type']}-{$current_args['template']}-{$current_args['name']}.css" ) )
+	{
+		$cssFile = get_bloginfo('template_directory') . "/css/" . "{$current_args['type']}-{$current_args['template']}-{$current_args['name']}.css" ;
+		echo "\t\t<link rel=\"stylesheet\" href=\"{$cssFile}\" type=\"text/css\" media=\"screen\" />\n";
+	}
+
+}
+
+function load_current_js()
+{	
+	/*
+	 * JS files are named in the form {current-type}-{current-template}.js.
+	 * We automatically include custom js files acording to the custom view.
+	*/
+
+	global $current_args;
+
+	$name = "{$current_args['type']}-{$current_args['template']}.js";
+
+	if( file_exists( JS_DIR . $name ) )
+	{
+		$jsFile = get_bloginfo('template_directory') . "/js/" . $name ;
+		echo "\t\t<script src=\"{$jsFile}\" type=\"text/javascript\"></script>\n";
+	}
+
+}
+function get_curr_cats()
+{
+	$current_cat_id=get_query_var('cat');
+	$categories=  get_categories(array('parent'=>$current_cat_id,'hide_empty'=>0));
+	return $categories;
+}
+/**
+* Define a constant path to our single template folder
+*/
+define(SINGLE_PATH, TEMPLATEPATH . '/single');
+
+/**
+* Filter the single_template with our custom function
+*/
+add_filter('single_template', 'single_template');
+
+/**
+* Single template function which will choose our template
+*/
+function single_template($single) {
+global $wp_query, $post;
+
+/**
+* Checks for single template by category
+* Check by category slug and ID
+*/
+	foreach((array)get_the_category() as $cat)
+	{
+		if(file_exists(SINGLE_PATH . '/single-cat-' . $cat->slug . '.php'))
+			return SINGLE_PATH . '/single-cat-' . $cat->slug . '.php';
+		elseif(file_exists(SINGLE_PATH . '/single-cat-' . $cat->term_id . '.php'))
+		return SINGLE_PATH . '/single-cat-' . $cat->term_id . '.php';
+	}
+}
+add_theme_support( 'menus' );
+function my_scripts_method() {
+	wp_deregister_script( 'jquery' );
+   	wp_enqueue_script( 'jquery',get_template_directory_uri() . '/js/jquery-1.7.2.min.js' );
+	wp_enqueue_script( 'jquery.corner', get_template_directory_uri() . '/js/jquery.corner.js',array('jquery'));
+	wp_enqueue_script( 'sys.main.js' ,get_template_directory_uri() . '/js/sys.main.js',array('jquery'));
+	wp_enqueue_style( 'main.style', get_template_directory_uri() .'/css/sys-main.css',array(),"3.6");
+}    
+ 
+add_action('wp_enqueue_scripts', 'my_scripts_method');
